@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 
 
 const db = createClient(
-    "https://icgygltsspubrhpzwbrt.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ3lnbHRzc3B1YnJocHp3YnJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY4Nzc4MDksImV4cCI6MjA2MjQ1MzgwOX0.7p4QGGn2VbYIgY28RjGtkmW_XlV067nP8pC7rlNBfLY"
+    "https://gjclhkbthduammarykdw.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqY2xoa2J0aGR1YW1tYXJ5a2R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY4Nzc4MjgsImV4cCI6MjA2MjQ1MzgyOH0.jNdyUfpDI_YihhbhTNTeVaKC0ao69XqGJBaUjgloCc4"
 )
 
 const app = express()
