@@ -1,30 +1,15 @@
 import { Router } from 'express'
+import products from './products.js'
+import users from './users.js'
 
 export default () => {
     const router = Router()
 
-    router.get('/', (req, res) => {
-        res.send('Entering API ROUTE')
-    })
 
-    router.get('/users', async (req, res) => {
-        const supabase = req.app.get('supabase')
-        // Actions to DB
 
-        const { data, error } = await supabase.from("users").select("*")
+    router.use('/products', products())
 
-        if (error) {
-            res.send({
-                code: 400,
-                message: error.message
-            })
-        }
-
-        res.send({
-            code: 200,
-            data
-        })
-    })
+    router.use('/users', users())
 
     return router
 
