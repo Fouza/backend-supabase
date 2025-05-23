@@ -11,7 +11,7 @@ export default function () {
         const { user_id, product_id, number } = req.body
 
         if (!user_id || !product_id || typeof number !== 'number' || number === 0) {
-            res.send({
+            return res.send({
                 code: 400,
                 message: 'You have to specify a user and a product and a number'
             })
@@ -20,9 +20,9 @@ export default function () {
         //Check if user exists
 
         const { data: dataUser, error: errorUser } = await supabase.from("users").select("id").eq("id", user_id).single()
-        
+
         if (!dataUser || errorUser) {
-            res.send({
+            return res.send({
                 code: 401,
                 message: errorUser?.message || "User not found"
             })
@@ -34,21 +34,22 @@ export default function () {
 
         // Check if product exist and check stock
         if (!dataPr || errorPr || number > dataPr.stock) {
-            res.send({
+            return res.send({
                 code: 404,
-                message: errorPr?.message  || 'Product not found or unsufficient stock'
+                message: errorPr?.message || 'Product not found or unsufficient stock'
             })
         }
 
         const price = dataPr.price
-        const total = price * number        
+        const total = price * number
 
         // Insert of order
-        const { data, error } = await supabase.from("orders").insert([user_id, product_id, number, total]).select("*").single()
+        const { data, error } = await supabase.from("orders").insert([{ user_id, product_id, number, total }]).select("*").single()
+
         if (!data || error) {
-            res.send({
+            return res.send({
                 code: 500,
-                message: error?.message ||  'Error inserting order please try again.'
+                message: error?.message || 'Error inserting order please try again.'
             })
         }
 
@@ -60,13 +61,14 @@ export default function () {
         ).eq("id", product_id).select("stock").single()
 
         if (!dataUpdate || errorUpdate || dataUpdate.stock === dataPr.stock) {
-            res.send({
+            return res.send({
                 code: 500,
                 message: 'Error updating stock of product'
             })
         }
+        
         // Send order created in the response
-        res.send({
+        return res.send({
             code: 200,
             data
         })

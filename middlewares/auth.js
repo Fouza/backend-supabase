@@ -17,7 +17,7 @@ export const authMiddleware = (req, res, next) => {
         req.user = decoded;
         next();
     } catch (error) {
-        res.status(401).json({
+        return res.status(401).json({
             code: 401,
             message: 'Invalid token'
         });
@@ -48,7 +48,7 @@ export const supabaseAuthMiddleware = async (req, res, next) => {
         req.user = user;
         next();
     } catch (error) {
-        res.status(401).json({
+        return res.status(401).json({
             code: 401,
             message: 'Invalid token'
         });

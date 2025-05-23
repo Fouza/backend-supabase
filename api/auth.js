@@ -45,7 +45,7 @@ export default () => {
                 { expiresIn: "24h" }
             );
 
-            res.status(201).json({
+            return res.status(201).json({
                 code: 201,
                 data: {
                     user: {
@@ -57,7 +57,7 @@ export default () => {
                 }
             });
         } catch (error) {
-            res.status(500).json({
+            return res.status(500).json({
                 code: 500,
                 message: error.message
             });
@@ -93,7 +93,7 @@ export default () => {
                 { expiresIn: "24h" }
             );
 
-            res.json({
+            return res.json({
                 code: 200,
                 data: {
                     user: {
@@ -105,7 +105,7 @@ export default () => {
                 }
             });
         } catch (error) {
-            res.status(500).json({
+            return res.status(500).json({
                 code: 500,
                 message: error.message
             });
@@ -135,12 +135,12 @@ export default () => {
                 });
             }
 
-            res.status(201).json({
+            return res.status(201).json({
                 code: 201,
                 data
             });
         } catch (error) {
-            res.status(500).json({
+            return res.status(500).json({
                 code: 500,
                 message: error.message
             });
@@ -164,12 +164,12 @@ export default () => {
                 });
             }
 
-            res.json({
+            return res.json({
                 code: 200,
                 data
             });
         } catch (error) {
-            res.status(500).json({
+            return res.status(500).json({
                 code: 500,
                 message: error.message
             });
