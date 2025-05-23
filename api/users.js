@@ -48,7 +48,7 @@ export default () => {
         const supabase = req.app.get('supabase')
         const { id } = req.body
         const { soft_delete } = req.query
-
+        console.log(id)
         if (!id) {
             res.send({
                 code: 401,
@@ -56,7 +56,7 @@ export default () => {
             })
         }
 
-        const existUser = await supabase.from("users").eq("id", id).single()
+        const existUser = await supabase.from("users").select("*").eq("id", id).single()
 
         if (!existUser?.data) {
             res.send({
@@ -64,7 +64,7 @@ export default () => {
             })
         }
 
-        
+
         let result
         if (!soft_delete) {
             result = await supabase.from("users").delete().eq('id', id).select("*")

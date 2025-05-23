@@ -5,8 +5,9 @@ export default () => {
 
     router.get('/', async (req, res) => {
         const supabase = req.app.get('supabase')
+        const {product_id} = req.query
 
-        const { data, error } = await supabase.from("products").select("*")
+        const { data, error } = await supabase.from("products").select("*").eq("id", product_id).single()
 
         if (error) {
             res.send({
@@ -24,11 +25,14 @@ export default () => {
     router.post('/', async (req, res) => {
         const supabase = req.app.get('supabase')
 
+        //Check if user_id is sent in the request body
+
 
         const { data, error } = await supabase
             .from("products")
             .insert([req.body])
             .select()
+            .single()
 
         if (error) {
             res.send({
@@ -69,7 +73,7 @@ export default () => {
                 message: error.message
             })
         }
-        
+
         res.send({
             code: 200,
             data
