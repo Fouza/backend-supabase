@@ -15,7 +15,7 @@ export default () => {
 
     router.use('/users', users())
 
-    router.use('/orders', orders())
+    router.use('/orders',authMiddleware, orders())
 
     return router
 
