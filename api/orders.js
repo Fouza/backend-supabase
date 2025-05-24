@@ -9,7 +9,7 @@ export default function () {
     router.post('/', async (req, res) => {
         const supabase = req.app.get('supabase')
 
-        const {userId: user_id} = req.user
+        const {user_id: user_id} = req.user
 
         const { product_id, number } = req.body
 

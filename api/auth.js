@@ -92,7 +92,7 @@ export default () => {
         }
     });
 
-    router.post("/custom/login", async (req, res) => {
+    router.post("/login", async (req, res) => {
         try {
             const supabase = req.app.get('supabase')
             const { email, password } = req.body;
