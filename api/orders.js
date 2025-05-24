@@ -8,7 +8,10 @@ export default function () {
 
     router.post('/', async (req, res) => {
         const supabase = req.app.get('supabase')
-        const { user_id, product_id, number } = req.body
+
+        const {userId: user_id} = req.user
+
+        const { product_id, number } = req.body
 
         if (!user_id || !product_id || typeof number !== 'number' || number === 0) {
             return res.send({

@@ -1,6 +1,8 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from 'express'
 import api from './api/index.js'
-import auth from './api/auth.js'
 import { createClient } from '@supabase/supabase-js'
 import logger from './middlewares/logger.js'
 
@@ -10,7 +12,8 @@ const db = createClient(
 )
 
 const app = express()
-const PORT = 3000
+const PORT = process.env.PORT
+    console.log(PORT)
 
 app.use(express.json())
 // app.use(logger)
@@ -21,7 +24,6 @@ app.get('/', (req, res) => {
 })
 
 app.use('/api', api())
-app.use('/auth', auth())
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`)

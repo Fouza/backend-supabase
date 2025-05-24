@@ -1,46 +1,60 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { v4 as uuidv4 } from "uuid";
 
 export default () => {
     const router = Router();
-    const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
-    
-    // In-memory user store (replace with database in production)
-    const users = new Map();
+    const JWT_SECRET = process.env.JWT_SECRET
+
 
     // Custom Authentication Routes
-    router.post("/custom/signup", async (req, res) => {
+    router.post("/signup", async (req, res) => {
         try {
-            const { email, password, name } = req.body;
+            const supabase = req.app.get('supabase')
 
-            // Check if user already exists
-            if (users.has(email)) {
-                return res.status(400).json({
+            const { email, password, first_name, last_name } = req.body;
+
+            // Todo : Email format verification
+            // Todo : Password format verification
+
+            if (!email || !password) {
+                res.send({
                     code: 400,
-                    message: "User already exists"
-                });
+                    message: 'Email and password are required'
+                })
             }
 
+            const { data, error } = await supabase.from("users").select("id").eq("email", email).single()
+
+            if (data) {
+                res.send({
+                    message: 'Email already in use'
+                })
+            }
             // Hash password
             const hashedPassword = await bcrypt.hash(password, 10);
 
             // Create user
             const user = {
-                id: uuidv4(),
                 email,
                 password: hashedPassword,
-                name,
-                createdAt: new Date().toISOString()
+                first_name,
+                last_name,
             };
 
             // Store user
-            users.set(email, user);
+            const {data: dataUser, error:errorUser} = await supabase.from("users").insert([user]).select("*").single()
+
+            if (errorUser) {
+                return res.status(500).json({
+                    code: 500,
+                    message: errorUser.message
+                });
+            }
 
             // Generate token
             const token = jwt.sign(
-                { userId: user.id, email: user.email },
+                { user_id: dataUser.id, email: dataUser.email },
                 JWT_SECRET,
                 { expiresIn: "24h" }
             );
@@ -48,11 +62,7 @@ export default () => {
             return res.status(201).json({
                 code: 201,
                 data: {
-                    user: {
-                        id: user.id,
-                        email: user.email,
-                        name: user.name
-                    },
+                    user: dataUser,
                     token
                 }
             });
@@ -112,69 +122,5 @@ export default () => {
         }
     });
 
-    // Supabase Authentication Routes
-    router.post("/supabase/signup", async (req, res) => {
-        try {
-            const supabase = req.app.get('supabase');
-            const { email, password, name } = req.body;
-
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: {
-                        name
-                    }
-                }
-            });
-
-            if (error) {
-                return res.status(400).json({
-                    code: 400,
-                    message: error.message
-                });
-            }
-
-            return res.status(201).json({
-                code: 201,
-                data
-            });
-        } catch (error) {
-            return res.status(500).json({
-                code: 500,
-                message: error.message
-            });
-        }
-    });
-
-    router.post("/supabase/login", async (req, res) => {
-        try {
-            const supabase = req.app.get('supabase');
-            const { email, password } = req.body;
-
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password
-            });
-
-            if (error) {
-                return res.status(401).json({
-                    code: 401,
-                    message: error.message
-                });
-            }
-
-            return res.json({
-                code: 200,
-                data
-            });
-        } catch (error) {
-            return res.status(500).json({
-                code: 500,
-                message: error.message
-            });
-        }
-    });
-
     return router;
-}; 
+};
