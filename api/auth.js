@@ -6,6 +6,9 @@ export default () => {
     const router = Router();
     const JWT_SECRET = process.env.JWT_SECRET
 
+    // Validation patterns
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
     // Custom Authentication Routes
     router.post("/signup", async (req, res) => {
@@ -14,23 +17,38 @@ export default () => {
 
             const { email, password, first_name, last_name } = req.body;
 
-            // Todo : Email format verification
-            // Todo : Password format verification
+            // Email format verification
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({
+                    code: 400,
+                    message: 'Invalid email format. Please use a valid email address.'
+                });
+            }
+
+            // Password format verification
+            if (!passwordRegex.test(password)) {
+                return res.status(400).json({
+                    code: 400,
+                    message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
+                });
+            }
 
             if (!email || !password) {
-                res.send({
+                return res.status(400).json({
                     code: 400,
                     message: 'Email and password are required'
-                })
+                });
             }
 
             const { data, error } = await supabase.from("users").select("id").eq("email", email).single()
 
             if (data) {
-                res.send({
+                return res.status(400).json({
+                    code: 400,
                     message: 'Email already in use'
-                })
+                });
             }
+
             // Hash password
             const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -43,7 +61,7 @@ export default () => {
             };
 
             // Store user
-            const {data: dataUser, error:errorUser} = await supabase.from("users").insert([user]).select("*").single()
+            const { data: dataUser, error: errorUser } = await supabase.from("users").insert([user]).select("*").single()
 
             if (errorUser) {
                 return res.status(500).json({
@@ -76,29 +94,39 @@ export default () => {
 
     router.post("/custom/login", async (req, res) => {
         try {
+            const supabase = req.app.get('supabase')
             const { email, password } = req.body;
 
+            // Email format verification
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({
+                    code: 400,
+                    message: 'Invalid email format. Please use a valid email address.'
+                });
+            }
+
             // Find user
-            const user = users.get(email);
-            if (!user) {
+            const { data: dataUser, error: errorUser } = await supabase.from("users").select("*").eq("email", email).single()
+
+            if (!dataUser) {
                 return res.status(401).json({
                     code: 401,
-                    message: "Invalid credentials"
+                    message: "Invalid email"
                 });
             }
 
             // Verify password
-            const isValidPassword = await bcrypt.compare(password, user.password);
+            const isValidPassword = await bcrypt.compare(password, dataUser.password);
             if (!isValidPassword) {
                 return res.status(401).json({
                     code: 401,
-                    message: "Invalid credentials"
+                    message: "Invalid password"
                 });
             }
 
             // Generate token
             const token = jwt.sign(
-                { userId: user.id, email: user.email },
+                { user_id: dataUser.id, email: dataUser.email },
                 JWT_SECRET,
                 { expiresIn: "24h" }
             );
@@ -106,11 +134,7 @@ export default () => {
             return res.json({
                 code: 200,
                 data: {
-                    user: {
-                        id: user.id,
-                        email: user.email,
-                        name: user.name
-                    },
+                    user: dataUser,
                     token
                 }
             });
