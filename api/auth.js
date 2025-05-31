@@ -17,6 +17,13 @@ export default () => {
 
             const { email, password, first_name, last_name } = req.body;
 
+            if (!email || !password) {
+                return res.status(400).json({
+                    code: 400,
+                    message: 'Email and password are required'
+                });
+            }
+            
             // Email format verification
             if (!emailRegex.test(email)) {
                 return res.status(400).json({
@@ -30,13 +37,6 @@ export default () => {
                 return res.status(400).json({
                     code: 400,
                     message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
-                });
-            }
-
-            if (!email || !password) {
-                return res.status(400).json({
-                    code: 400,
-                    message: 'Email and password are required'
                 });
             }
 

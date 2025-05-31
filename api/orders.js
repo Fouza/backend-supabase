@@ -5,6 +5,109 @@ export default function () {
 
     const router = Router()
 
+    // Get orders with products
+    router.get('/', async (req, res) => {
+        try {
+            const supabase = req.app.get('supabase')
+            const { userId: user_id } = req.user    
+            console.log(req.user)
+
+            if (!user_id) {
+                return res.status(400).json({
+                    code: 400,
+                    message: 'User ID is required'
+                });
+            }
+
+            // Get orders with product details using a join
+            const { data, error } = await supabase
+                .from('orders')
+                .select(`
+                    *,
+                    products (
+                        *
+                    ),
+                    users (
+                        *
+                    )
+                `)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                return res.status(500).json({
+                    code: 500,
+                    message: error.message
+                });
+            }
+
+            return res.json({
+                code: 200,
+                data
+            });
+        } catch (error) {
+            return res.status(500).json({
+                code: 500,
+                message: error.message
+            });
+        }
+    });
+
+    // Get single order with product details
+    router.get('/:id', async (req, res) => {
+        try {
+            const supabase = req.app.get('supabase')
+            const { id } = req.params
+            const { user_id } = req.query
+
+            if (!user_id) {
+                return res.status(400).json({
+                    code: 400,
+                    message: 'User ID is required'
+                });
+            }
+
+            // Get single order with product details
+            const { data, error } = await supabase
+                .from('orders')
+                .select(`
+                    *,
+                    products (
+                        id,
+                        name,
+                        price,
+                        description,
+                        image_url
+                    )
+                `)
+                .eq('id', id)
+                .eq('user_id', user_id)
+                .single();
+
+            if (error) {
+                return res.status(500).json({
+                    code: 500,
+                    message: error.message
+                });
+            }
+
+            if (!data) {
+                return res.status(404).json({
+                    code: 404,
+                    message: 'Order not found'
+                });
+            }
+
+            return res.json({
+                code: 200,
+                data
+            });
+        } catch (error) {
+            return res.status(500).json({
+                code: 500,
+                message: error.message
+            });
+        }
+    });
 
     router.post('/', async (req, res) => {
         const supabase = req.app.get('supabase')
