@@ -1,5 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import { passwordRegex } from "./auth";
 
 export default () => {
     const router = Router();
@@ -73,7 +74,103 @@ export default () => {
         }
     });
 
-  
+    // Update user profile
+    router.put('/profile', async (req, res) => {
+        try {
+            const supabase = req.app.get('supabase');
+            const { userId: user_id } = req.user;
+            const { first_name, last_name, current_password, new_password } = req.body;
+            // If updating password
+            if (current_password && new_password) {
+                if (!passwordRegex.test(new_password) && current_password === new_password) {
+                    return res.send({
+                        code: 400, 
+                        message: 'Password in wrong format or password already used'
+                    })
+                }
+                // Get current user data
+                const { data: user, error: userError } = await supabase
+                    .from('users')
+                    .select('password')
+                    .eq('id', user_id)
+                    .single();
+
+                if (userError) {
+                    return res.status(500).json({
+                        code: 500,
+                        message: userError.message
+                    });
+                }
+
+                // Verify current password
+                const isValidPassword = await bcrypt.compare(current_password, user.password);
+                if (!isValidPassword) {
+                    return res.status(401).json({
+                        code: 401,
+                        message: 'Current password is incorrect'
+                    });
+                }
+                
+                // Hash new password
+                const hashedPassword = await bcrypt.hash(new_password, 10);
+
+                // Update user with new password
+                const { data, error } = await supabase
+                    .from('users')
+                    .update({
+                        first_name,
+                        last_name,
+                        password: hashedPassword
+                    })
+                    .eq('id', user_id)
+                    .select('id, email, first_name, last_name')
+                    .single();
+
+                if (error) {
+                    return res.status(500).json({
+                        code: 500,
+                        message: error.message
+                    });
+                }
+
+                return res.json({
+                    code: 200,
+                    data
+                });
+            }
+
+            // Update profile without password change
+            const { data, error } = await supabase
+                .from('users')
+                .update({
+                    first_name,
+                    last_name
+                })
+                .eq('id', user_id)
+                .select('id, email, first_name, last_name')
+                .single();
+
+            if (error) {
+                return res.status(500).json({
+                    code: 500,
+                    message: error.message
+                });
+            }
+
+            return res.json({
+                code: 200,
+                data
+            });
+        } catch (error) {
+            return res.status(500).json({
+                code: 500,
+                message: error.message
+            });
+        }
+    });
+
+   
+
     return router;
 };
 
