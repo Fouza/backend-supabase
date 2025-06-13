@@ -19,7 +19,10 @@ export const authMiddleware = (req, res, next) => {
         console.log(decoded)
         // iat : issued at
         // exp : expiration time
-        req.user = decoded;
+        req.user ={
+            userId: decoded.user_id,
+            email: decoded.email
+        }
 
         
         next();

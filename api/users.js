@@ -2,18 +2,21 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 
 export default () => {
-    const router = Router();
+  const router = Router();
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-    // Get user profile with their products and orders
-    router.get('/profile', async (req, res) => {
-        try {
-            const supabase = req.app.get('supabase');
-            const { userId: user_id } = req.user;
+  // Get user profile with their products and orders
+  router.get("/profile", async (req, res) => {
+    try {
+      const supabase = req.app.get("supabase");
+      const { userId: user_id } = req.user;
 
-            // Get user details with their products and orders
-            const { data, error } = await supabase
-                .from('users')
-                .select(`
+      // Get user details with their products and orders
+      const { data, error } = await supabase
+        .from("users")
+        .select(
+          `
                     *,
                     products!products_user_id_fkey (
                         id,
@@ -34,51 +37,139 @@ export default () => {
                             price
                         )
                     )
-                `)
-                .eq('id', user_id)
-                .single();
+                `
+        )
+        .eq("id", user_id)
+        .single();
 
-            if (error) {
-                return res.status(500).json({
-                    code: 500,
-                    message: error.message
-                });
-            }
+      if (error) {
+        return res.status(500).json({
+          code: 500,
+          message: error.message,
+        });
+      }
 
-            // Calculate user statistics
-            const stats = {
-                total_products: data.products.length,
-                total_orders: data.orders.length,
-                total_spent: data.orders.reduce((sum, order) => sum + order.total, 0),
-                total_earned: data.products.reduce((sum, product) => {
-                    const productOrders = data.orders.filter(order => 
-                        order.products && order.product_id === product.id
-                    )
-                    return sum + productOrders.reduce((orderSum, order) => orderSum + order.total, 0);
-                }, 0)
-            }
+      // Calculate user statistics
+      const stats = {
+        total_products: data.products.length,
+        total_orders: data.orders.length,
+        total_spent: data.orders.reduce((sum, order) => sum + order.total, 0),
+        total_earned: data.products.reduce((sum, product) => {
+          const productOrders = data.orders.filter(
+            (order) => order.products && order.product_id === product.id
+          );
+          return (
+            sum +
+            productOrders.reduce((orderSum, order) => orderSum + order.total, 0)
+          );
+        }, 0),
+      };
 
-            return res.send({
-                code: 200,
-                data: {
-                    ...data,
-                    stats
-                }
-            });
-        } catch (error) {
-            return res.status(500).json({
-                code: 500,
-                message: error.message
-            });
+      return res.send({
+        code: 200,
+        data: {
+          ...data,
+          stats,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        code: 500,
+        message: error.message,
+      });
+    }
+  });
+
+  router.put("/profile", async (req, res) => {
+    try {
+      const supabase = req.app.get("supabase");
+      const { userId: user_id } = req.user;
+      const { first_name, last_name, current_password, new_password } =
+        req.body;
+
+      if (current_password && new_password) {
+        if (
+          !passwordRegex.test(new_password) ||
+          current_password === new_password
+        ) {
+          return res.status(400).json({
+            code: 400,
+            message: "wrong password format or password aleardy used.",
+          });
         }
-    });
 
-  
-    return router;
+        const { data: user, error } = await supabase
+          .from("users")
+          .select("password")
+          .eq("id", user_id)
+          .single();
+
+        const isCurrentPasswordCorrect = await bcrypt.compare(
+          current_password,
+          user.password
+        );
+
+        if (!isCurrentPasswordCorrect) {
+          return res.status(400).json({
+            code: 400,
+            error: "Current password is incorrect.",
+          });
+        }
+
+        const newHashedPassword = await bcrypt.hash(new_password, 10);
+        console.log("...:", newHashedPassword);
+
+        const { data: dataUser, error: errorUser } = await supabase
+          .from("users")
+          .update({ password: newHashedPassword })
+          .eq("id", user_id)
+          .select("password")
+          .single();
+
+        if (errorUser) {
+          return res.status(500).json({
+            code: 500,
+            message: errorUser.message,
+          });
+        }
+      }
+
+      if (!first_name && !last_name) {
+        return res.status(400).json({
+          code: 400,
+          message: "You have to specify at least one field to update.",
+        });
+      }
+      const { data: dataUser, error: errorUser } = await supabase
+        .from("users")
+        .update({ first_name, last_name })
+        .select("first_name,last_name")
+        .eq("id", user_id)
+        .single();
+
+      if (errorUser) {
+        return res.status(500).json({
+          code: 500,
+          message: errorUser.message,
+        });
+      }
+
+      return res.status(200).json({
+        code: 200,
+        data: dataUser,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        code: 500,
+        message: error.message,
+      });
+    }
+  });
+  return router;
 };
 
-
 // // Example 1: Simple Sum
+
 // const numbers = [1, 2, 3, 4, 5];
 
 // const sum = numbers.reduce((accumulator, currentValue) => {
